@@ -189,7 +189,9 @@ class _UniWebPageState extends State<UniWebPage> {
         _resetUrl();
       }
     });
-
+    new Future.delayed(const Duration(seconds: 2), () {
+      _initATT();
+    });
     Future.delayed(const Duration(seconds: 6), () {
       _sendDataToWeb();
 
