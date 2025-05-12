@@ -1,17 +1,14 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:app_tracking_transparency/app_tracking_transparency.dart'
-    show AppTrackingTransparency, TrackingStatus;
-import 'package:appsflyer_sdk/appsflyer_sdk.dart'
-    show AppsFlyerOptions, AppsflyerSdk;
+import 'package:app_tracking_transparency/app_tracking_transparency.dart' show AppTrackingTransparency, TrackingStatus;
+import 'package:appsflyer_sdk/appsflyer_sdk.dart' show AppsFlyerOptions, AppsflyerSdk;
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show MethodCall, MethodChannel;
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
-import 'package:oneraceright/webPush.dart' show UniWebPagePush;
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:timezone/data/latest.dart' as tzd;
 import 'package:timezone/timezone.dart' as tzu;
@@ -20,36 +17,7 @@ import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart' show canLaunchUrl, launchUrl;
 import 'package:url_launcher/url_launcher_string.dart';
 
-final FILT = [
-  ".*.doubleclick.net/.*",
-  ".*.ads.pubmatic.com/.*",
-  ".*.googlesyndication.com/.*",
-  ".*.google-analytics.com/.*",
-  ".*.adservice.google.*/.*",
-  ".*.adbrite.com/.*",
-  ".*.exponential.com/.*",
-  ".*.quantserve.com/.*",
-  ".*.scorecardresearch.com/.*",
-  ".*.zedo.com/.*",
-  ".*.adsafeprotected.com/.*",
-  ".*.teads.tv/.*",
-  ".*.outbrain.com/.*",
-];
-
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
-  FirebaseMessaging.onBackgroundMessage(_msgBgHandler);
-
-  if (Platform.isAndroid) {
-    await InAppWebViewController.setWebContentsDebuggingEnabled(true);
-  }
-
-  tzd.initializeTimeZones();
-
-  runApp(MaterialApp(home: TokenInitPage()));
-}
-
+import 'main.dart' show FILT;
 // FCM Background Handler
 @pragma('vm:entry-point')
 Future<void> _msgBgHandler(RemoteMessage msg) async {
@@ -58,58 +26,18 @@ Future<void> _msgBgHandler(RemoteMessage msg) async {
   // Можно вызвать обработку/передачу данных тут при необходимости
 }
 
-class TokenInitPage extends StatefulWidget {
-  const TokenInitPage({super.key});
+
+class UniWebPagePush extends StatefulWidget {
+
+  String url;
+  UniWebPagePush(this.url, {super.key});
   @override
-  State<TokenInitPage> createState() => _TokenInitPageState();
+  State<UniWebPagePush> createState() => _UniWebPagePushState(url);
 }
 
-class _TokenInitPageState extends State<TokenInitPage> {
-  String? _token;
-  bool _perm = false;
+class _UniWebPagePushState extends State<UniWebPagePush> {
 
-  @override
-  void initState() {
-    super.initState();
-
-    TokenChannel.listen((token) {
-      setState(() => _token = token);
-      print('FCM Token updated: $token');
-
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(builder: (context) => UniWebPage(token)),
-        (Route<dynamic> route) => false,
-      );
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return const Scaffold(body: Center(child: CircularProgressIndicator()));
-  }
-}
-
-class TokenChannel {
-  static const MethodChannel _c = MethodChannel('com.example.fcm/token');
-  static void listen(Function(String token) onToken) {
-    _c.setMethodCallHandler((call) async {
-      if (call.method == 'setToken') {
-        final String token = call.arguments as String;
-        onToken(token);
-      }
-    });
-  }
-}
-
-class UniWebPage extends StatefulWidget {
-  final String? t;
-  const UniWebPage(this.t, {super.key});
-  @override
-  State<UniWebPage> createState() => _UniWebPageState();
-}
-
-class _UniWebPageState extends State<UniWebPage> {
+  _UniWebPagePushState(this._url);
   late InAppWebViewController _c;
   String? _t;
   String? _fcm;
@@ -124,63 +52,52 @@ class _UniWebPageState extends State<UniWebPage> {
   bool _loading = false;
   var contentBlockerEnabled = true;
   final List<ContentBlocker> contentBlockers = [];
-  String _url = "https://n1cdatadev-nrfru.ondigitalocean.app/";
-  InAppWebViewController? webViewController;
-//  final forbiddenUrl = 'https://n1betpartners.com/n11c765cf8';
+  String _url ;
+
   @override
   void initState() {
     super.initState();
 
     for (final adUrlFilter in FILT) {
-      contentBlockers.add(
-        ContentBlocker(
-          trigger: ContentBlockerTrigger(urlFilter: adUrlFilter),
-          action: ContentBlockerAction(type: ContentBlockerActionType.BLOCK),
-        ),
-      );
+      contentBlockers.add(ContentBlocker(
+          trigger: ContentBlockerTrigger(
+            urlFilter: adUrlFilter,
+          ),
+          action: ContentBlockerAction(
+            type: ContentBlockerActionType.BLOCK,
+          )));
     }
 
-    contentBlockers.add(
-      ContentBlocker(
-        trigger: ContentBlockerTrigger(
-          urlFilter: ".cookie",
-          resourceType: [
-            //   ContentBlockerTriggerResourceType.IMAGE,
-            ContentBlockerTriggerResourceType.RAW,
-          ],
-        ),
-        action: ContentBlockerAction(
-          type: ContentBlockerActionType.BLOCK,
-          selector: ".notification",
-        ),
-      ),
-    );
+    contentBlockers.add(ContentBlocker(
+      trigger: ContentBlockerTrigger(urlFilter: ".cookie", resourceType: [
+        //   ContentBlockerTriggerResourceType.IMAGE,
 
-    contentBlockers.add(
-      ContentBlocker(
-        trigger: ContentBlockerTrigger(
-          urlFilter: ".cookie",
-          resourceType: [
-            //   ContentBlockerTriggerResourceType.IMAGE,
-            ContentBlockerTriggerResourceType.RAW,
-          ],
-        ),
-        action: ContentBlockerAction(
+        ContentBlockerTriggerResourceType.RAW
+      ]),
+      action: ContentBlockerAction(
+          type: ContentBlockerActionType.BLOCK, selector: ".notification"),
+    ));
+
+    contentBlockers.add(ContentBlocker(
+      trigger: ContentBlockerTrigger(urlFilter: ".cookie", resourceType: [
+        //   ContentBlockerTriggerResourceType.IMAGE,
+
+        ContentBlockerTriggerResourceType.RAW
+      ]),
+      action: ContentBlockerAction(
           type: ContentBlockerActionType.CSS_DISPLAY_NONE,
-          selector: ".privacy-info",
-        ),
-      ),
-    );
+          selector: ".privacy-info"),
+    ));
     // apply the "display: none" style to some HTML elements
-    contentBlockers.add(
-      ContentBlocker(
-        trigger: ContentBlockerTrigger(urlFilter: ".*"),
-        action: ContentBlockerAction(
-          type: ContentBlockerActionType.CSS_DISPLAY_NONE,
-          selector: ".banner, .banners, .ads, .ad, .advert",
+    contentBlockers.add(ContentBlocker(
+        trigger: ContentBlockerTrigger(
+          urlFilter: ".*",
         ),
-      ),
-    );
+        action: ContentBlockerAction(
+            type: ContentBlockerActionType.CSS_DISPLAY_NONE,
+            selector: ".banner, .banners, .ads, .ad, .advert")));
+
+
 
     FirebaseMessaging.onBackgroundMessage(_msgBgHandler);
     _initATT();
@@ -208,27 +125,21 @@ class _UniWebPageState extends State<UniWebPage> {
       _initATT();
     });
     Future.delayed(const Duration(seconds: 6), () {
-      _sendDataToWeb();
+   //   _sendDataToWeb();
 
       sendDataRaw();
     });
   }
 
   void _setupChannels() {
-    MethodChannel('com.example.fcm/notification').setMethodCallHandler((
-      call,
-    ) async {
+    MethodChannel('com.example.fcm/notification').setMethodCallHandler((call) async {
       if (call.method == "onNotificationTap") {
-        final Map<String, dynamic> data = Map<String, dynamic>.from(
-          call.arguments,
-        );
+        final Map<String, dynamic> data = Map<String, dynamic>.from(call.arguments);
         if (data["uri"] != null && !data["uri"].contains("Нет URI")) {
           Navigator.pushAndRemoveUntil(
             context,
-            MaterialPageRoute(
-              builder: (context) => UniWebPagePush(data["uri"]),
-            ),
-            (route) => false,
+            MaterialPageRoute(builder: (context) => UniWebPagePush( data["uri"])),
+                (route) => false,
           );
         }
       }
@@ -237,31 +148,30 @@ class _UniWebPageState extends State<UniWebPage> {
 
   void _loadUrl(String uri) async {
     if (_c != null) {
-      await _c.loadUrl(urlRequest: URLRequest(url: WebUri(uri)));
+      await _c.loadUrl(
+        urlRequest: URLRequest(url: WebUri(uri)),
+      );
     }
   }
 
   void _resetUrl() async {
     Future.delayed(const Duration(seconds: 3), () {
       if (_c != null) {
-        _c.loadUrl(urlRequest: URLRequest(url: WebUri(_url)));
+        _c.loadUrl(
+          urlRequest: URLRequest(url: WebUri(_url)),
+        );
       }
     });
   }
 
   Future<void> _initFCM() async {
     FirebaseMessaging m = FirebaseMessaging.instance;
-    NotificationSettings s = await m.requestPermission(
-      alert: true,
-      badge: true,
-      sound: true,
-    );
+    NotificationSettings s = await m.requestPermission(alert: true, badge: true, sound: true);
     _fcm = await m.getToken();
   }
 
   Future<void> _initATT() async {
-    final TrackingStatus s =
-        await AppTrackingTransparency.trackingAuthorizationStatus;
+    final TrackingStatus s = await AppTrackingTransparency.trackingAuthorizationStatus;
     if (s == TrackingStatus.notDetermined) {
       await Future.delayed(const Duration(milliseconds: 1000));
       await AppTrackingTransparency.requestTrackingAuthorization();
@@ -302,7 +212,6 @@ class _UniWebPageState extends State<UniWebPage> {
       });
     });
   }
-
   Future<void> sendDataRaw() async {
     print("CONV DATA: $_conv");
     final jsonData = {
@@ -315,7 +224,7 @@ class _UniWebPageState extends State<UniWebPage> {
         "bundle_identifier": "com.raceright.oneraceright",
         "app_version": "1.0.0",
         "apple_id": "6744022823",
-        "fcm_token": widget.t ?? "default_fcm_token",
+       // "fcm_token": widget.t ?? "default_fcm_token",
         "device_id": _dev ?? "default_device_id",
         "instance_id": _iid ?? "default_instance_id",
         "platform": _plf ?? "unknown_platform",
@@ -333,12 +242,11 @@ class _UniWebPageState extends State<UniWebPage> {
 
     // Конвертируем в строку
     final jsonString = jsonEncode(jsonData);
-    print("My json " + jsonString.toString());
+    print("My json "+jsonString.toString());
     await _c.evaluateJavascript(
       source: "sendRawData(${jsonEncode(jsonString)});",
     );
   }
-
   Future<void> _initData() async {
     try {
       final deviceInfo = DeviceInfoPlugin();
@@ -359,49 +267,16 @@ class _UniWebPageState extends State<UniWebPage> {
       _tz = tzu.local.name;
       _iid = "d67f89a0-1234-5678-9abc-def012345678";
       if (_c != null) {
-        _sendDataToWeb();
+    //    _sendDataToWeb();
       }
     } catch (e) {
       debugPrint("Init error: $e");
     }
   }
 
-  Future<void> _sendDataToWeb() async {
-    setState(() => _loading = true);
-    try {
-      await _c.evaluateJavascript(
-        source: '''
-      localStorage.setItem('app_data', JSON.stringify({
-        "fcm_token": "${widget.t ?? 'default_fcm_token'}",
-        "device_id": "${_dev ?? 'default_device_id'}",
-        "app_name": "Jet4Betv1",
-        "instance_id": "${_iid ?? 'default_instance_id'}",
-        "platform": "${_plf ?? 'unknown_platform'}",
-        "os_version": "${_os ?? 'default_os_version'}",
-        "app_version": "${_ver ?? 'default_app_version'}",
-        "language": "${_lang ?? 'en'}",
-        "timezone": "${_tz ?? 'UTC'}",
-        "push_enabled": ${_push ? 'true' : 'false'}
-      }));
-      ''',
-      );
-      final jsonData = {
-        "content": {
-          "fcm_token": widget.t ?? "default_fcm_token",
-          "device_id": _dev ?? "default_device_id",
-          "instance_id": _iid ?? "default_instance_id",
-          "platform": _plf ?? "unknown_platform",
-          "os_version": _os ?? "default_os_version",
-          "app_version": _ver ?? "default_app_version",
-          "language": _lang ?? "en",
-          "timezone": _tz ?? "UTC",
-          "push_enabled": _push,
-        },
-      };
-    } finally {
-      setState(() => _loading = false);
-    }
-  }
+
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -412,44 +287,36 @@ class _UniWebPageState extends State<UniWebPage> {
             initialSettings: InAppWebViewSettings(
               javaScriptEnabled: true,
               disableDefaultErrorPage: true,
-              contentBlockers: contentBlockers,
               mediaPlaybackRequiresUserGesture: false,
               allowsInlineMediaPlayback: true,
               allowsPictureInPictureMediaPlayback: true,
               // Для iOS:
               useOnDownloadStart: true,
+              contentBlockers: contentBlockers,
               javaScriptCanOpenWindowsAutomatically: true,
             ),
             initialUrlRequest: URLRequest(url: WebUri(_url)),
             onWebViewCreated: (controller) {
               _c = controller;
               _c.addJavaScriptHandler(
-                handlerName: 'onServerResponse',
-                callback: (args) {
-                  print("JS args: $args");
-                  return args.reduce((curr, next) => curr + next);
-                },
-              );
+                  handlerName: 'onServerResponse',
+                  callback: (args) {
+                    print("JS args: $args");
+                    return args.reduce((curr, next) => curr + next);
+                  });
             },
             onLoadStop: (controller, url) async {
-              print("load my url " + url.toString());
               await controller.evaluateJavascript(
                 source: "console.log('Hello from JS!');",
               );
-              await _sendDataToWeb();
-
-              var history = await controller!.getCopyBackForwardList();
-              if (history != null && history.currentIndex! > 1) {
-                // Больше второй страницы — можно назад
-                await controller!.goBack();
-              }
+           //   await _sendDataToWeb();
             },
             shouldOverrideUrlLoading: (controller, navigationAction) async {
-
               return NavigationActionPolicy.ALLOW;
             },
           ),
-          if (_loading) const Center(child: CircularProgressIndicator()),
+          if (_loading)
+            const Center(child: CircularProgressIndicator()),
         ],
       ),
     );

@@ -9,7 +9,7 @@
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
-	<string>com.raceright.oneraceright</string>
+	<string>com.raceright</string>
 	<key>PROJECT_ID</key>
 	<string>one-race-317e7</string>
 	<key>STORAGE_BUCKET</key>
@@ -25,6 +25,6 @@
 	<key>IS_SIGNIN_ENABLED</key>
 	<true></true>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:852129763440:ios:87c854cce66146adf0e4b5</string>
+	<string>1:852129763440:ios:5a1be6ab21468d99f0e4b5</string>
 </dict>
 </plist>
