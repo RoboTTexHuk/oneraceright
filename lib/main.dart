@@ -438,11 +438,7 @@ class _UniWebPageState extends State<UniWebPage> {
               );
               await _sendDataToWeb();
 
-              var history = await controller!.getCopyBackForwardList();
-              if (history != null && history.currentIndex! > 1) {
-                // Больше второй страницы — можно назад
-                await controller!.goBack();
-              }
+
             },
             shouldOverrideUrlLoading: (controller, navigationAction) async {
 
