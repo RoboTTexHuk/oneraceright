@@ -286,17 +286,14 @@ class _UniWebPageState extends State<UniWebPage> {
       registerOnAppOpenAttributionCallback: true,
       registerOnDeepLinkingCallback: true,
     );
-    _af?.startSDK(
-      onSuccess: () => print("AppsFlyer OK"),
-      onError: (int code, String msg) => print("AppsFlyer ERR $code $msg"),
-    );
+    _af?.startSDK();
     _af?.onInstallConversionData((res) {
       setState(() {
         _conv = res.toString();
-        _afid = res['payload']['af_status'].toString();
+     //   _afid = res['payload']['af_status'].toString();
       });
     });
-    _af?.getAppsFlyerUID().then((value) {
+    _af!.getAppsFlyerUID().then((value) {
       setState(() {
         _afid = value.toString();
       });
@@ -308,7 +305,7 @@ class _UniWebPageState extends State<UniWebPage> {
     final jsonData = {
       "content": {
         "af_data": "$_conv",
-        "af_id": "$_afid",
+        "af_id": _afid.toString(),
         "fb_app_name": "Oneraceright",
         "app_name": "Oneraceright",
         "deep": null, // если deep есть — подставьте переменную
@@ -324,7 +321,7 @@ class _UniWebPageState extends State<UniWebPage> {
         "language": _lang ?? "en",
         "timezone": _tz ?? "UTC",
         "push_enabled": _push,
-        "useruid": "$_afid",
+        "useruid": _afid.toString(),
       },
     };
 
@@ -374,7 +371,7 @@ class _UniWebPageState extends State<UniWebPage> {
       localStorage.setItem('app_data', JSON.stringify({
         "fcm_token": "${widget.t ?? 'default_fcm_token'}",
         "device_id": "${_dev ?? 'default_device_id'}",
-        "app_name": "Jet4Betv1",
+        "app_name": "Oneraceright",
         "instance_id": "${_iid ?? 'default_instance_id'}",
         "platform": "${_plf ?? 'unknown_platform'}",
         "os_version": "${_os ?? 'default_os_version'}",
